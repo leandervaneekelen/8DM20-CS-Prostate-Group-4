@@ -92,6 +92,9 @@ E.register(
 #Parameters_Affine.txt
 # Open the logfile into the dictionary L
 L = elastix.logfile('results/IterationInfo.0.R0.txt')
+plt.figure()
+plt.plot(L['itnr'], L['metric'])
+plt.show()
 #%% 
 E.register(
     fixed_image=im1,
@@ -99,6 +102,7 @@ E.register(
     parameters=[r'MR/Parameters_BSpline.txt'], initial_transform = r'results/TransformParameters.0.txt',
     output_dir='results')
 #%%
+L = elastix.logfile('results/IterationInfo.0.R0.txt')
 
 # Plot the 'metric' against the iteration number 'itnr'
 plt.figure()
