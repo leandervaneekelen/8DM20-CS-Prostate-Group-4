@@ -23,6 +23,6 @@ mat_mi=np.arange(225).reshape(15, 15)
 atlasselection=list()
 for i in range(mat_mi.shape[0]):
     coord_atlasel=np.nonzero(mat_mi[i,:]/mat_mi[i,:].max()>0.7)
-    atlasselection.append(coord_atlasel)
+    atlasselection.append(coord_atlasel[0])
     
     
