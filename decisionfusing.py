@@ -6,7 +6,7 @@ Created on Mon Mar 25 10:32:33 2019
 """
 
 import numpy as np
-import 
+from scipy.ndimage import gaussian_filter
 
 def decisionfusing(fixed_im, reg_ims, pred_segs):
     """ Takes as input a fixed image (3D numpy array), a series of registered images (4D numpy array) with the
@@ -14,6 +14,11 @@ def decisionfusing(fixed_im, reg_ims, pred_segs):
     
     Executes decision fusing technique described in Isgum et al. (2009). Returns a binary, decision fused
     numpy array of same dimensions as fixed image. """
+    
+    # Constants
+    SCALE1 = 0.5
+    SCALE2 = 0.5
+    EPSILON = 0.001
     
     # Begin by checking dimensions of input arguments
     assert fixed_im.shape == reg_ims[0,:,:,:].shape, "Fixed image dimensions do not match registered images."
@@ -23,27 +28,17 @@ def decisionfusing(fixed_im, reg_ims, pred_segs):
     diff_ims = np.zeros(reg_ims.shape, dtype = reg_ims.dtype)
     for i in range(reg_ims.shape[0]):
         diff_ims[i] = np.abs(reg_ims[i] - fixed_im)
-        
-    # Allocate memory & calculate weight images
-    weights = np.zeros(reg_im.shape, dtype = reg_ims.dtype)
+    
+    # Blur all volumes with gaussian kernel, then calculate weight images
     for i in range(reg_ims.shape[0]):
-        
+        diff_ims[i] = gaussian_filter(diff_ims[i], sigma = SCALE1)
+    weights = 1 / (diff_ims + EPSILON)
     
-    return diff_ims
+    # Fuse predicted segmentations by taking (normalised) weighted sum
+    norm_factor = 1 / (np.sum(weights, axis = 0))    
+    fused_pred_segs = norm_factor * np.sum(weights*pred_segs, axis = 0)
     
-## DEBUGGING
-import SimpleITK as sitk
-
-image1 = sitk.ReadImage(r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Dataset\p102\mr_bffe.mhd')
-image1 = sitk.GetArrayFromImage(image1)
-
-image2 = sitk.ReadImage(r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Dataset\p107\mr_bffe.mhd')
-image2 = sitk.GetArrayFromImage(image2)
-
-image3 = sitk.ReadImage(r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Dataset\p107\prostaat.mhd')
-image3 = sitk.GetArrayFromImage(image3)
-
-images = np.stack([image2, image2, image2])
-segs = np.stack([image3, image3, image3])
-
-diff_ims = decisionfusing(image1, images, segs)
+    # Lastly, blur predictions with scale 2, then treshold for final segmentation
+    fused_pred_segs = gaussian_filter(fused_pred_segs, sigma = SCALE2)
+    return fused_pred_segs > 0.5
+    

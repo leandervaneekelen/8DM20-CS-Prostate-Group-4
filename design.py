@@ -14,7 +14,7 @@
 for all registered images:
 	do D[i] = ||registered atlas image - target image||
 ## D.shape() is [im_x, im_y, im_z, n_images - 1]
-## values in D are 0.0 <= n <= 1.0
+## values in D are > 0, real
 
 # Calculate weights lambda
 for all difference maps D[i]:
