@@ -8,7 +8,7 @@
 
 # Decision fusion process according to Isgum et al.:
 
-## <-- INDICATE ASSERTIONS
+## <-- INDICATE ASSUMPTIONS
 
 # Subtract images:
 for all registered images:
