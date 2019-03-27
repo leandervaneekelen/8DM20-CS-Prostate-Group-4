@@ -13,6 +13,47 @@ def FindMI(txt):
     MI = float(MI[1])
     return MI
 
+
+def Affine(f, m, p, output ='results', plot = False):
+    "Peforms affine transformation, using the fixed image, moving image, provided parameter file"
+    E.register(
+    fixed_image=f,
+    moving_image=m,
+    parameters=[p],
+    output_dir= output)
+    if plot == True:
+        for i in range(4):
+            L = elastix.logfile('results/IterationInfo.0.R{}.txt'.format(i))
+            # Plot the 'metric' against the iteration number 'itnr'
+            plt.figure()
+            plt.plot(L['itnr'], L['metric'])
+            plt.tight_layout()
+            plt.xlabel('Iteration Number', size = 16)
+            plt.ylabel('Mattes Mutual Information', size = 16)
+            plt.xticks(size = 14)
+            plt.yticks(size = 14)
+            
+def BSpline(f, m, p,intitaltransform, output ='results', plot = False):
+    "Peforms BSpline transformation, using the fixed image, moving image, provided parameter file"
+    E.register(
+    fixed_image=f,
+    moving_image=m,
+    parameters=[p], 
+    initial_transform =intitaltransform,
+    output_dir = output)
+    if plot == True:
+        for i in range(4):
+            L = elastix.logfile('results/IterationInfo.0.R{}.txt'.format(i))
+            # Plot the 'metric' against the iteration number 'itnr'
+            plt.figure()
+            plt.plot(L['itnr'], L['metric'])
+            plt.tight_layout()
+            plt.xlabel('Iteration Number', size = 16)
+            plt.ylabel('Mattes Mutual Information', size = 16)
+            plt.xticks(size = 14)
+            plt.yticks(size = 14)       
+
+
 path = 'C:\\Users\\s081992\\Documents\\TUE\\Year 2\\Q3\\Capita Selecta\\Part 2\\TrainingData\\TrainingData'
 elastix_path=r'C:\Users\s081992\Documents\TUE\Year 2\Q3\Capita Selecta\Part 2\PracticalSession2019 2\PracticalSession2019\Software\Software\elastix_windows64_v4.7\elastix.exe'
 scans , masks = Import_Files_string(path)
@@ -30,42 +71,20 @@ MI[:] = np.nan
             fixed = scans[i]
             moving = scans[j]
             #%% First registration, affine.
-            E.register(
-                fixed_image = fixed,
-                moving_image = moving,
-                parameters=[r'MR/Parameters_Affine.txt'],
-                output_dir='results')
-            #Parameters_Affine.txt
-            # Open the logfile into the dictionary L
-            L = elastix.logfile('results/IterationInfo.0.R0.txt')
-            
-#            Plot and store the registration metric vs. the number of iterations?
-            plt.figure()
-            plt.plot(L['itnr'], L['metric'])
-            
-
-            
+            p = r'MR/Parameters_Affine.txt'
+            Affine(fixed, moving, p)
+                        
             #%% Second registration following the affine registration. 
-            E.register(
-                fixed,
-                moving,
-                parameters=[r'MR/Parameters_BSpline.txt'], initial_transform = r'results/TransformParameters.0.txt',
-                output_dir='results')
-            
-            # Open the logfile into the dictionary L
-            L = elastix.logfile('results/IterationInfo.0.R0.txt')
-            
-#            Plot and store the registration metric vs. the number of iterations?
-            plt.figure()
-            plt.plot(L['itnr'], L['metric'])
- 
+            initial_transform = r'results/TransformParameters.0.txt'
+            p = r'MR/Parameters_BSpline.txt'
+            BSpline(fixed, moving,p ,initial_transform)
             
             #%% Storing Mutual information in an 15x15 array. 
             MI[i,j] = FindMI('results/IterationInfo.0.R4.txt')
 
 #            **STORE IMAGES ---> MHD file? NP Array?
 #            **Calculate the deformations based on the written paramater file
-
+np.save('MutualInformation.npy',MI)
 
 #
 #im_arr1 = sitk.GetArrayFromImage(sitk.ReadImage(im1))
