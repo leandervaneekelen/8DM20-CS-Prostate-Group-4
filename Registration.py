@@ -1,20 +1,20 @@
-import elastix
+#import elastix
 import matplotlib.pyplot as plt
 import imageio
 import numpy as np
 import SimpleITK as sitk
-
+import os
 from Import_Files import Import_Files_string
 
 def FindMI(txt):
     with open(txt) as f:
         lines = f.readlines()
     MI = lines[len(lines)-1].split('\t')
-    MI = float(MI[1])
-    return MI
+    if MI[1] is not '-1.#IND00':
+        MI = float(MI[1])
+        return MI
 
-
-def Affine(f, m, p, output ='results', plot = False):
+def Affine(f, m, p,path, output, plot = False):
     "Peforms affine transformation, using the fixed image, moving image, provided parameter file"
     E.register(
     fixed_image=f,
@@ -23,7 +23,7 @@ def Affine(f, m, p, output ='results', plot = False):
     output_dir= output)
     if plot == True:
         for i in range(4):
-            L = elastix.logfile('results/IterationInfo.0.R{}.txt'.format(i))
+            L = elastix.logfile('{}\IterationInfo.0.R{}.txt'.format(path,i))
             # Plot the 'metric' against the iteration number 'itnr'
             plt.figure()
             plt.plot(L['itnr'], L['metric'])
@@ -33,7 +33,7 @@ def Affine(f, m, p, output ='results', plot = False):
             plt.xticks(size = 14)
             plt.yticks(size = 14)
             
-def BSpline(f, m, p,intitaltransform, output ='results', plot = False):
+def BSpline(f, m, p,intitaltransform, path, output, plot = False):
     "Peforms BSpline transformation, using the fixed image, moving image, provided parameter file"
     E.register(
     fixed_image=f,
@@ -43,7 +43,26 @@ def BSpline(f, m, p,intitaltransform, output ='results', plot = False):
     output_dir = output)
     if plot == True:
         for i in range(4):
-            L = elastix.logfile('results/IterationInfo.0.R{}.txt'.format(i))
+            L = elastix.logfile('{}\IterationInfo.0.R{}.txt'.format(path,i))
+            # Plot the 'metric' against the iteration number 'itnr'
+            plt.figure()
+            plt.plot(L['itnr'], L['metric'])
+            plt.tight_layout()
+            plt.xlabel('Iteration Number', size = 16)
+            plt.ylabel('Mattes Mutual Information', size = 16)
+            plt.xticks(size = 14)
+            plt.yticks(size = 14)       
+            
+def BSplineOnly(f, m, p,path, output,  plot = False):
+    "Peforms BSpline transformation, using the fixed image, moving image, provided parameter file"
+    E.register(
+    fixed_image=f,
+    moving_image=m,
+    parameters=[p], 
+    output_dir = output)
+    if plot == True:
+        for i in range(4):
+            L = elastix.logfile('{}\IterationInfo.0.R{}.txt'.format(path,i))
             # Plot the 'metric' against the iteration number 'itnr'
             plt.figure()
             plt.plot(L['itnr'], L['metric'])
@@ -54,37 +73,88 @@ def BSpline(f, m, p,intitaltransform, output ='results', plot = False):
             plt.yticks(size = 14)       
 
 
-path = 'C:\\Users\\s081992\\Documents\\TUE\\Year 2\\Q3\\Capita Selecta\\Part 2\\TrainingData\\TrainingData'
+def CreateFolder(fixed, moving, path):
+    """Creates Folders of stucture path/fixed image/moving image/ where the Registration results can be placed. """
+    dir_path = r'{}\{}\{}'.format(path,fixed,moving) # New path
+    if not os.path.exists(dir_path): # Checks if the folder exists already
+        os.makedirs(dir_path)
+    return dir_path
+
+# TRAINING DATA PATH
+data_path = 'C:\\Users\\s081992\\Documents\\TUE\\Year 2\\Q3\\Capita Selecta\\Part 2\\TrainingData\\TrainingData'
+# ELASTIX PATH
 elastix_path=r'C:\Users\s081992\Documents\TUE\Year 2\Q3\Capita Selecta\Part 2\PracticalSession2019 2\PracticalSession2019\Software\Software\elastix_windows64_v4.7\elastix.exe'
-scans , masks = Import_Files_string(path)
+# OUTPUT FOLDER
+results_path = r'C:\Users\s081992\Documents\TUE\Year 2\Q3\Capita Selecta\Part 2\pythonforelastix\python'
+
+
+scans , masks = Import_Files_string(data_path)
 
 E = elastix.ElastixInterface(elastix_path)
 
 MI = np.zeros((len(scans),len(scans)))
 MI[:] = np.nan
-
+#%%
 # Loop over all combinations of images to calculate the registeration.
-    for i in range(len(scans)):
-        j=0
-#    for j in range(len(scans)):
-        if i !=j:
-            fixed = scans[i]
-            moving = scans[j]
-            #%% First registration, affine.
-            p = r'MR/Parameters_Affine.txt'
-            Affine(fixed, moving, p)
-                        
-            #%% Second registration following the affine registration. 
-            initial_transform = r'results/TransformParameters.0.txt'
-            p = r'MR/Parameters_BSpline.txt'
-            BSpline(fixed, moving,p ,initial_transform)
-            
-            #%% Storing Mutual information in an 15x15 array. 
-            MI[i,j] = FindMI('results/IterationInfo.0.R4.txt')
+# Currently the 2 options are still "implemented in comments". 
+#1. Just running the BSpline.
+#2. appending the MI to a dict with key = p###
+# Both can be deleted, however the np array was giving me a lot of trouble. 
 
-#            **STORE IMAGES ---> MHD file? NP Array?
-#            **Calculate the deformations based on the written paramater file
+#mi = {}
+for i in range(len(scans)):
+#    j=0
+    fixed = scans[i]
+#    mi[fixed[-16:-12]]=[]
+    
+    for j in range(len(scans)):
+        if i !=j:
+            
+            moving = scans[j]
+            destination_path = CreateFolder(fixed[-16:-12],moving[-16:-12], results_path)
+            #%% First registration, affine.
+#            p = r'Parameters_Affine.txt'
+#            Affine(fixed, moving, p,results_path, output = destination_path)
+
+
+            #%% Second registration, BSpline(using the affine registration).
+#            initial_transform = r'{}\TransformParameters.0.txt'.format(destination_path)
+            p = r'Parameters_BSpline.txt'
+#            BSpline(fixed, moving,p ,initial_transform,results_path,output = destination_path)
+            BSplineOnly(fixed, moving,p,results_path,output = destination_path)        
+            #%% Storing Mutual information in an 15x15 array. 
+            
+            MI[i,j] = FindMI(r'{}\IterationInfo.0.R3.txt'.format(destination_path))
+#            mi[fixed[-16:-12]].append(FindMIdict(r'{}\IterationInfo.0.R3.txt'.format(destination_path)))
+            
+            
+            
+            
+#!!!!STILL TO BE DONE: **Calculate the deformations based on the written paramater file
 np.save('MutualInformation.npy',MI)
+
+
+#%% Calculate average, taking the annoying error into account. 
+# appending (image_indes, threshold) into thresh
+# Can be deleted as well, but might be useful to look at the MI output. 
+avlist = []
+thresh = []
+
+arr =np.load('Affine_BSpline_MI.npy')
+#arr = np.load('Affine_BSpline.npy')
+for i in range(arr.shape[0]):
+    row = arr[i]
+    s = 0
+    n = 0
+    for j in range(len(row)):
+#        if arr[i][j] != '-1.#IND00':
+        if i!=j:
+            s += float(arr[i][j])
+            n +=1
+            if float(arr[i][j]) <avlist[i]:
+                thresh.append((i,float(arr[i][j])))
+#    print(n)
+    avlist.append(s/n)
 
 #
 #im_arr1 = sitk.GetArrayFromImage(sitk.ReadImage(im1))
@@ -107,21 +177,3 @@ np.save('MutualInformation.npy',MI)
 #
 ## Get the full deformation field
 #path_to_deformation_field = T.deformation_field(output_dir='results')
-#%% Scroll through the fixed, moving and registrated images
-#from scrollview import ScrollView
-##image = np.load('path/to/image')
-##aspect_ratio = [2.3, 0.95, 0.95]  # i.e. the ElementSpacing
-#aspect_ratio = [2.3, 2.3, 2.3]  # i.e. the ElementSpacing
-## Define viewers for every axis
-#viewer1 = ScrollView(im_arr1)
-#viewer2 = ScrollView(im_arr2)
-#viewer3 = ScrollView(im_arrres)
-##viewer2 = ScrollView(im.transpose(1, 0, 2))
-##viewer3 = ScrollView(im.transpose(2, 0, 1))
-#
-## Make three Matplotlib supblots, and populate them with the viewers objects
-## The aspect ratios of the different axes need to be defined here as well.
-#fig, ax = plt.subplots(1, 3)
-#viewer1.plot(ax[0], cmap='gray', aspect=aspect_ratio[1]/aspect_ratio[2])
-#viewer2.plot(ax[1], cmap='gray', aspect=aspect_ratio[0]/aspect_ratio[2])
-#viewer3.plot(ax[2], cmap='gray', aspect=aspect_ratio[0]/aspect_ratio[1])
