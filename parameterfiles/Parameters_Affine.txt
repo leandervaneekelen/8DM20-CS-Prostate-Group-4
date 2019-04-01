@@ -26,6 +26,8 @@
 (AutomaticScalesEstimation "true")
 (AutomaticTransformInitialization "false")
 
+(AutomaticTransformInitialization "true")
+
 (NumberOfResolutions 4)
 
 (HowToCombineTransforms "Compose")
