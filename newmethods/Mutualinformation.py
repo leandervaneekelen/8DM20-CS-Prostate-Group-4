@@ -19,7 +19,7 @@ def atlasfiltering(mat_mi, treshold = 0.7):
     
     for i in range(mat_mi.shape[0]):
         # Normalise all MI's with the maximum out of that row, then treshold
-        tresholded_mat_mi = mat_mi[i,:]/mat_mi[i,:].max() > treshold
+        tresholded_mat_mi = mat_mi[i,:]/np.abs(mat_mi[i,:]).max() > treshold
         coord_atlases = np.nonzero(tresholded_mat_mi)
         atlasselection.append(coord_atlases[0])
     
