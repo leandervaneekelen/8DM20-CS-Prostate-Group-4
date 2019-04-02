@@ -62,7 +62,7 @@ def BSplineOnly(f, m, p,path,elastix_path, output,  plot = False):
     E.register(
     fixed_image=f,
     moving_image=m,
-    parameters=[p], 
+    parameters = [p], 
     output_dir = output)
     if plot == True:
         for i in range(4):
@@ -84,45 +84,46 @@ def CreateFolder(fixed, moving, path):
         os.makedirs(dir_path)
     return dir_path
 
-def main(data_path, elastix_path, results_path,registration = 'BSpline'):
+def register(data_path, elastix_path, results_path,registration = 'BSpline'):
+    """Performs leave 1-out registration of the entire dataset. Takes as input three paths, to:
+        a) data folder; b) elastix.exe path; c) path to results folder
+        OPTIONAL ARGUMENT: specifying what kind of registration via 'registration' parameter
+        Options are: 'Affine', 'BSpline', 'Both' - 'BSpline' is default
+        
+        Writes registered images and logs files to disk, returns nxn MI numpy array."""
+        
     scans , masks = Import_Files_string(data_path)
-    
     
     MI = np.zeros((len(scans),len(scans)))
     MI[:] = np.nan
     for i in range(len(scans)):
         fixed = scans[i]
-        
-#        for j in range(len(scans)):
-        j=0
-        if i !=j:
-            
-            moving = scans[j]
-            destination_path = CreateFolder(fixed[-16:-12],moving[-16:-12], results_path)
-            #%% First registration option: Affine.
-            if registration == 'Affine':
-                p = r'parameterfiles\Parameters_Affine.txt'
-                Affine(fixed, moving, p,results_path, elastix_path,output = destination_path)
-            #%% Second registration option: BSpline
-            if registration =='BSpline':
-                p = r'parameterfiles\Parameters_BSpline.txt'
-                BSplineOnly(fixed, moving,p,results_path,elastix_path,output = destination_path)        
-            #%% Third registration option: Combination of both Affine and BSpline(using the transformation parameters of the affine registration)
-            if registration == 'Both':
-                p = r'parameterfiles\Parameters_BSpline.txt'
-                initial_transform = r'{}\TransformParameters.0.txt'.format(destination_path)            
-                BSpline(fixed, moving,p ,initial_transform,results_path,elastix_path,output = destination_path)           
-            
-            #%% Storing Mutual information in an 15x15 array. 
-            MI[i,j] = FindMI(r'{}\IterationInfo.0.R3.txt'.format(destination_path))
+        for j in range(len(scans)):
+            if i !=j: # Do not compare images with themselves
+                moving = scans[j]
+                destination_path = CreateFolder(fixed[-16:-12],moving[-16:-12], results_path)
+                #%% First registration option: Affine.
+                if registration == 'Affine':
+                    p = r'parameterfiles\Parameters_Affine.txt'
+                    Affine(fixed, moving, p,results_path, elastix_path,output = destination_path)
+                #%% Second registration option: BSpline
+                if registration =='BSpline':
+                    p = r'parameterfiles\Parameters_BSpline.txt'
+                    BSplineOnly(fixed, moving,p,results_path,elastix_path,output = destination_path)        
+                #%% Third registration option: Combination of both Affine and BSpline(using the transformation parameters of the affine registration)
+                if registration == 'Both':
+                    p = r'parameterfiles\Parameters_BSpline.txt'
+                    initial_transform = r'{}\TransformParameters.0.txt'.format(destination_path)            
+                    BSpline(fixed, moving,p ,initial_transform,results_path,elastix_path,output = destination_path)           
+                
+                #%% Storing Mutual information in an 15x15 array. 
+                MI[i,j] = FindMI(r'{}\IterationInfo.0.R3.txt'.format(destination_path))
     return MI
 
-# TRAINING DATA PATH
-data_path = 'C:\\Users\\s081992\\Documents\\TUE\\Year 2\\Q3\\Capita Selecta\\Part 2\\TrainingData\\TrainingData'
-# ELASTIX PATH
-elastix_path=r'C:\Users\s081992\Documents\TUE\Year 2\Q3\Capita Selecta\Part 2\PracticalSession2019 2\PracticalSession2019\Software\Software\elastix_windows64_v4.7\elastix.exe'
-# OUTPUT FOLDER
-results_path = r'C:\Users\s081992\Documents\TUE\Year 2\Q3\Capita Selecta\Part 2\pythonforelastix\python'
+DATA_PATH = r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Dataset'
+ELASTIX_PATH = r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Practical\Software\elastix_windows64\elastix.exe'
+TRANSFORMIX_PATH = r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Practical\Software\elastix_windows64\transformix.exe'
+RESULT_PATH = r'D:\Leander\8DM20 Capita Selecta Image Analysis\Run 3'
 
-MI = main(data_path, elastix_path,results_path,registration='BSpline')
+MI = register(DATA_PATH, ELASTIX_PATH, RESULT_PATH, registration='BSpline')
 np.save('MutualInformation.npy',MI)
