@@ -26,7 +26,12 @@ def Transform_GT(data_path, results_path, transformix_path):
     files = glob.glob(results_path + r'\p*\p*\TransformParameters.0.txt')
     
     # Apply transformation of parameterfile i to its respective mask, then write to file
-    for parameterfile in files:
+    nFiles = len(files)
+    for n, parameterfile in zip(range(nFiles), files):
+        
+        # Print progress
+        print('{} registrations out of {} performed'.format(n, nFiles))
+        
         current_path = parameterfile[:-25]
         T = elastix.TransformixInterface(parameters=parameterfile,
                                      transformix_path=transformix_path)
