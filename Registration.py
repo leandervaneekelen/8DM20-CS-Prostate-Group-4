@@ -120,10 +120,11 @@ def register(data_path, elastix_path, results_path,registration = 'BSpline'):
                 MI[i,j] = FindMI(r'{}\IterationInfo.0.R3.txt'.format(destination_path))
     return MI
 
-DATA_PATH = r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Dataset'
-ELASTIX_PATH = r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Practical\Software\elastix_windows64\elastix.exe'
-TRANSFORMIX_PATH = r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Practical\Software\elastix_windows64\transformix.exe'
-RESULT_PATH = r'D:\Leander\8DM20 Capita Selecta Image Analysis\Run 3'
-
-MI = register(DATA_PATH, ELASTIX_PATH, RESULT_PATH, registration='BSpline')
-np.save('MutualInformation.npy',MI)
+if __name__ == '__main__':
+    DATA_PATH = r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Dataset'
+    ELASTIX_PATH = r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Practical\Software\elastix_windows64\elastix.exe'
+    TRANSFORMIX_PATH = r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Practical\Software\elastix_windows64\transformix.exe'
+    RESULT_PATH = r'D:\Leander\8DM20 Capita Selecta Image Analysis\Run 3'
+    
+    MI = register(DATA_PATH, ELASTIX_PATH, RESULT_PATH, registration='BSpline')
+    np.save('MutualInformation.npy',MI)

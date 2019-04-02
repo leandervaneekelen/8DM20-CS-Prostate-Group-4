@@ -37,8 +37,8 @@ def Import_Files_string(path):
     masks = np.stack(masks)
     return MRI,masks
 
-
-path= r'C:\Users\s081992\Documents\TUE\Year 2\Q3\Capita Selecta\Part 2\TrainingData\TrainingData'
+if __name__ == '__main__':
+    path= r'C:\Users\s081992\Documents\TUE\Year 2\Q3\Capita Selecta\Part 2\TrainingData\TrainingData'
 
 #%% Optional visualisation of Data
 #import random
