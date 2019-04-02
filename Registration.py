@@ -15,8 +15,9 @@ def FindMI(txt):
         return MI
 
 
-def Affine(f, m, p, path,output, plot = False):
+def Affine(f, m, p, path,elastix_path,output, plot = False):
     "Peforms affine transformation, using the fixed image, moving image, provided parameter file"
+    E = elastix.ElastixInterface(elastix_path)
     E.register(
     fixed_image=f,
     moving_image=m,
@@ -34,8 +35,9 @@ def Affine(f, m, p, path,output, plot = False):
             plt.xticks(size = 14)
             plt.yticks(size = 14)
             
-def BSpline(f, m, p,intitaltransform, path, output, plot = False):
+def BSpline(f, m, p,intitaltransform, path, elastix_path,output, plot = False):
     "Peforms BSpline transformation, using the fixed image, moving image, provided parameter file"
+    E = elastix.ElastixInterface(elastix_path)
     E.register(
     fixed_image=f,
     moving_image=m,
@@ -54,8 +56,9 @@ def BSpline(f, m, p,intitaltransform, path, output, plot = False):
             plt.xticks(size = 14)
             plt.yticks(size = 14)       
             
-def BSplineOnly(f, m, p,path, output,  plot = False):
+def BSplineOnly(f, m, p,path,elastix_path, output,  plot = False):
     "Peforms BSpline transformation, using the fixed image, moving image, provided parameter file"
+    E = elastix.ElastixInterface(elastix_path)
     E.register(
     fixed_image=f,
     moving_image=m,
@@ -84,34 +87,34 @@ def CreateFolder(fixed, moving, path):
 def main(data_path, elastix_path, results_path,registration = 'BSpline'):
     scans , masks = Import_Files_string(data_path)
     
-    E = elastix.ElastixInterface(elastix_path)
     
     MI = np.zeros((len(scans),len(scans)))
     MI[:] = np.nan
     for i in range(len(scans)):
         fixed = scans[i]
         
-        for j in range(len(scans)):
-            if i !=j:
-                
-                moving = scans[j]
-                destination_path = CreateFolder(fixed[-16:-12],moving[-16:-12], results_path)
-                #%% First registration option: Affine.
-                if registration == 'Affine':
-                    p = r'parameterfiles\Parameters_Affine.txt'
-                    Affine(fixed, moving, p,results_path, output = destination_path)
-                #%% Second registration option: BSpline
-                if registration =='BSpline':
-                    p = r'parameterfiles\Parameters_BSpline.txt'
-                    BSplineOnly(fixed, moving,p,results_path,output = destination_path)        
-                #%% Third registration option: Combination of both Affine and BSpline(using the transformation parameters of the affine registration)
-                if registration == 'Both':
-                    p = r'parameterfiles\Parameters_BSpline.txt'
-                    initial_transform = r'{}\TransformParameters.0.txt'.format(destination_path)            
-                    BSpline(fixed, moving,p ,initial_transform,results_path,output = destination_path)           
-                
-                #%% Storing Mutual information in an 15x15 array. 
-                MI[i,j] = FindMI(r'{}\IterationInfo.0.R3.txt'.format(destination_path))
+#        for j in range(len(scans)):
+        j=0
+        if i !=j:
+            
+            moving = scans[j]
+            destination_path = CreateFolder(fixed[-16:-12],moving[-16:-12], results_path)
+            #%% First registration option: Affine.
+            if registration == 'Affine':
+                p = r'parameterfiles\Parameters_Affine.txt'
+                Affine(fixed, moving, p,results_path, elastix_path,output = destination_path)
+            #%% Second registration option: BSpline
+            if registration =='BSpline':
+                p = r'parameterfiles\Parameters_BSpline.txt'
+                BSplineOnly(fixed, moving,p,results_path,elastix_path,output = destination_path)        
+            #%% Third registration option: Combination of both Affine and BSpline(using the transformation parameters of the affine registration)
+            if registration == 'Both':
+                p = r'parameterfiles\Parameters_BSpline.txt'
+                initial_transform = r'{}\TransformParameters.0.txt'.format(destination_path)            
+                BSpline(fixed, moving,p ,initial_transform,results_path,elastix_path,output = destination_path)           
+            
+            #%% Storing Mutual information in an 15x15 array. 
+            MI[i,j] = FindMI(r'{}\IterationInfo.0.R3.txt'.format(destination_path))
     return MI
 
 # TRAINING DATA PATH
