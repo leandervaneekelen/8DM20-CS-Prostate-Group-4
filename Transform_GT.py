@@ -26,11 +26,11 @@ def Transform_GT(data_path, results_path, transformix_path):
     # Collect a list of all transform parameter files
     files = glob.glob(results_path + r'\p*\p*\TransformParameters.0.txt')
     
-    # Re - writing "float" to short, to prevent circular pixelated edges of transferred masks.
+    # Setting "FinalBSplineInterpolationOrder" to 0 prevents circular pixelated edges of transferred masks(doesnt draw a thrid order polynomial.)
     for current in files:
         with fileinput.FileInput(current, inplace=True) as file:
             for line in file:
-                print(line.replace("float", "short"), end='')
+                print(line.replace("(FinalBSplineInterpolationOrder 3)", "(FinalBSplineInterpolationOrder 0)"), end='')
     
     # Apply transformation of parameterfile i to its respective mask, then write to file
     nFiles = len(files)
@@ -51,6 +51,6 @@ if __name__ == '__main__':
     # ELASTIX PATH
     elastix_path=r'C:\Users\s081992\Documents\TUE\Year 2\Q3\Capita Selecta\Part 2\PracticalSession2019 2\PracticalSession2019\Software\Software\elastix_windows64_v4.7\elastix.exe'
     # OUTPUT FOLDER
-    results_path = r'C:\Users\s081992\Documents\TUE\Year 2\Q3\Capita Selecta\Part 2\pythonforelastix\python'
-    
+#    results_path = r'C:\Users\s081992\Documents\TUE\Year 2\Q3\Capita Selecta\Part 2\pythonforelastix\python'
+    results_path = r'D:\Leander\8DM20 Capita Selecta Image Analysis\Run 2'
     transformix_path = r'C:\Users\s081992\Documents\TUE\Year 2\Q3\Capita Selecta\Part 2\PracticalSession2019 2\PracticalSession2019\Software\Software\elastix_windows64_v4.7\transformix.exe'
