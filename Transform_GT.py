@@ -2,6 +2,7 @@ import numpy as np
 import glob
 import elastix
 from Import_Files import Import_Files_string
+import fileinput
 # Make a new transformix object T with the CORRECT PATH to transformix
 
 def Transform_GT(data_path, results_path, transformix_path):
@@ -24,6 +25,12 @@ def Transform_GT(data_path, results_path, transformix_path):
     
     # Collect a list of all transform parameter files
     files = glob.glob(results_path + r'\p*\p*\TransformParameters.0.txt')
+    
+    # Re - writing "float" to short, to prevent circular pixelated edges of transferred masks.
+    for current in files:
+        with fileinput.FileInput(current, inplace=True) as file:
+            for line in file:
+                print(line.replace("float", "short"), end='')
     
     # Apply transformation of parameterfile i to its respective mask, then write to file
     nFiles = len(files)
