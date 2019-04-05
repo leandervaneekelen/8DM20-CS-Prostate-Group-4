@@ -3,106 +3,128 @@ import matplotlib.pyplot as plt
 import imageio
 import numpy as np
 import SimpleITK as sitk
-
+import os
 from Import_Files import Import_Files_string
 
 def FindMI(txt):
     with open(txt) as f:
         lines = f.readlines()
-    MI = lines[len(lines)-1].split('\t')
-    MI = float(MI[1])
+    MI = lines[-1].split('\t')
+    if MI[1]!= '-1.#IND00':
+        MI = float(MI[1])
+        return MI
+
+
+def Affine(f, m, p, path,elastix_path,output, plot = False):
+    "Peforms affine transformation, using the fixed image, moving image, provided parameter file"
+    E = elastix.ElastixInterface(elastix_path)
+    E.register(
+    fixed_image=f,
+    moving_image=m,
+    parameters=[p],
+    output_dir= output)
+    if plot == True:
+        for i in range(4):
+#            L = elastix.logfile('{}\IterationInfo.0.R{}.txt'.format(path,i))
+            # Plot the 'metric' against the iteration number 'itnr'
+            plt.figure()
+            plt.plot(L['itnr'], L['metric'])
+            plt.tight_layout()
+            plt.xlabel('Iteration Number', size = 16)
+            plt.ylabel('Mattes Mutual Information', size = 16)
+            plt.xticks(size = 14)
+            plt.yticks(size = 14)
+            
+def BSpline(f, m, p,intitaltransform, path, elastix_path,output, plot = False):
+    "Peforms BSpline transformation, using the fixed image, moving image, provided parameter file"
+    E = elastix.ElastixInterface(elastix_path)
+    E.register(
+    fixed_image=f,
+    moving_image=m,
+    parameters=[p], 
+    initial_transform =intitaltransform,
+    output_dir = output)
+    if plot == True:
+        for i in range(4):
+            L = elastix.logfile('{}\IterationInfo.0.R{}.txt'.format(path,i))
+            # Plot the 'metric' against the iteration number 'itnr'
+            plt.figure()
+            plt.plot(L['itnr'], L['metric'])
+            plt.tight_layout()
+            plt.xlabel('Iteration Number', size = 16)
+            plt.ylabel('Mattes Mutual Information', size = 16)
+            plt.xticks(size = 14)
+            plt.yticks(size = 14)       
+            
+def BSplineOnly(f, m, p,path,elastix_path, output,  plot = False):
+    "Peforms BSpline transformation, using the fixed image, moving image, provided parameter file"
+    E = elastix.ElastixInterface(elastix_path)
+    E.register(
+    fixed_image=f,
+    moving_image=m,
+    parameters = [p], 
+    output_dir = output)
+    if plot == True:
+        for i in range(4):
+            L = elastix.logfile('{}\IterationInfo.0.R{}.txt'.format(path,i))
+            # Plot the 'metric' against the iteration number 'itnr'
+            plt.figure()
+            plt.plot(L['itnr'], L['metric'])
+            plt.tight_layout()
+            plt.xlabel('Iteration Number', size = 16)
+            plt.ylabel('Mattes Mutual Information', size = 16)
+            plt.xticks(size = 14)
+            plt.yticks(size = 14)       
+
+
+def CreateFolder(fixed, moving, path):
+    """Creates Folders of stucture path/fixed image/moving image/ where the Registration results can be placed. """
+    dir_path = r'{}\{}\{}'.format(path,fixed,moving) # New path
+    if not os.path.exists(dir_path): # Checks if the folder exists already
+        os.makedirs(dir_path)
+    return dir_path
+
+def register(data_path, elastix_path, results_path,registration = 'BSpline'):
+    """Performs leave 1-out registration of the entire dataset. Takes as input three paths, to:
+        a) data folder; b) elastix.exe path; c) path to results folder
+        OPTIONAL ARGUMENT: specifying what kind of registration via 'registration' parameter
+        Options are: 'Affine', 'BSpline', 'Both' - 'BSpline' is default
+        
+        Writes registered images and logs files to disk, returns nxn MI numpy array."""
+        
+    scans , masks = Import_Files_string(data_path)
+    
+    MI = np.zeros((len(scans),len(scans)))
+    MI[:] = np.nan
+    for i in range(len(scans)):
+        fixed = scans[i]
+        for j in range(len(scans)):
+            if i !=j: # Do not compare images with themselves
+                moving = scans[j]
+                destination_path = CreateFolder(fixed[-16:-12],moving[-16:-12], results_path)
+                #%% First registration option: Affine.
+                if registration == 'Affine':
+                    p = r'parameterfiles\Parameters_Affine.txt'
+                    Affine(fixed, moving, p,results_path, elastix_path,output = destination_path)
+                #%% Second registration option: BSpline
+                if registration =='BSpline':
+                    p = r'parameterfiles\Parameters_BSpline.txt'
+                    BSplineOnly(fixed, moving,p,results_path,elastix_path,output = destination_path)        
+                #%% Third registration option: Combination of both Affine and BSpline(using the transformation parameters of the affine registration)
+                if registration == 'Both':
+                    p = r'parameterfiles\Parameters_BSpline.txt'
+                    initial_transform = r'{}\TransformParameters.0.txt'.format(destination_path)            
+                    BSpline(fixed, moving,p ,initial_transform,results_path,elastix_path,output = destination_path)           
+                
+                #%% Storing Mutual information in an 15x15 array. 
+                MI[i,j] = FindMI(r'{}\IterationInfo.0.R3.txt'.format(destination_path))
     return MI
 
-path = 'C:\\Users\\s081992\\Documents\\TUE\\Year 2\\Q3\\Capita Selecta\\Part 2\\TrainingData\\TrainingData'
-elastix_path=r'C:\Users\s081992\Documents\TUE\Year 2\Q3\Capita Selecta\Part 2\PracticalSession2019 2\PracticalSession2019\Software\Software\elastix_windows64_v4.7\elastix.exe'
-scans , masks = Import_Files_string(path)
-
-E = elastix.ElastixInterface(elastix_path)
-
-MI = np.zeros((len(scans),len(scans)))
-MI[:] = np.nan
-
-# Loop over all combinations of images to calculate the registeration.
-    for i in range(len(scans)):
-        j=0
-#    for j in range(len(scans)):
-        if i !=j:
-            fixed = scans[i]
-            moving = scans[j]
-            #%% First registration, affine.
-            E.register(
-                fixed_image = fixed,
-                moving_image = moving,
-                parameters=[r'MR/Parameters_Affine.txt'],
-                output_dir='results')
-            #Parameters_Affine.txt
-            # Open the logfile into the dictionary L
-            L = elastix.logfile('results/IterationInfo.0.R0.txt')
-            
-#            Plot and store the registration metric vs. the number of iterations?
-            plt.figure()
-            plt.plot(L['itnr'], L['metric'])
-            
-
-            
-            #%% Second registration following the affine registration. 
-            E.register(
-                fixed,
-                moving,
-                parameters=[r'MR/Parameters_BSpline.txt'], initial_transform = r'results/TransformParameters.0.txt',
-                output_dir='results')
-            
-            # Open the logfile into the dictionary L
-            L = elastix.logfile('results/IterationInfo.0.R0.txt')
-            
-#            Plot and store the registration metric vs. the number of iterations?
-            plt.figure()
-            plt.plot(L['itnr'], L['metric'])
- 
-            
-            #%% Storing Mutual information in an 15x15 array. 
-            MI[i,j] = FindMI('results/IterationInfo.0.R4.txt')
-
-#            **STORE IMAGES ---> MHD file? NP Array?
-#            **Calculate the deformations based on the written paramater file
-
-
-#
-#im_arr1 = sitk.GetArrayFromImage(sitk.ReadImage(im1))
-#im_arr2 = sitk.GetArrayFromImage(sitk.ReadImage(im2))
-#imres = sitk.ReadImage('results/result.0.mhd')
-#im_arrres = sitk.GetArrayFromImage(imres)
-
-# Make a new transformix object T with the CORRECT PATH to transformix
-#T = elastix.TransformixInterface(parameters='results/TransformParameters.0.txt',
-#                                 transformix_path=r'C:\Users\s081992\Documents\TUE\Year 2\Q3\Capita Selecta\Part 2\PracticalSession2019 2\PracticalSession2019\Software\Software\elastix_windows64_v4.7\transformix.exe')
-
-# Transform a new image with the transformation parameters
-#path_to_transformed_image = T.transform_image(im1, output_dir='results')
-#
-## Get the Jacobian matrix
-#path_to_jacobian_matrix = T.jacobian_matrix(output_dir='results')
-#
-## Get the Jacobian determinant
-#path_to_jacobian_determinant = T.jacobian_determinant(output_dir='results')
-#
-## Get the full deformation field
-#path_to_deformation_field = T.deformation_field(output_dir='results')
-#%% Scroll through the fixed, moving and registrated images
-#from scrollview import ScrollView
-##image = np.load('path/to/image')
-##aspect_ratio = [2.3, 0.95, 0.95]  # i.e. the ElementSpacing
-#aspect_ratio = [2.3, 2.3, 2.3]  # i.e. the ElementSpacing
-## Define viewers for every axis
-#viewer1 = ScrollView(im_arr1)
-#viewer2 = ScrollView(im_arr2)
-#viewer3 = ScrollView(im_arrres)
-##viewer2 = ScrollView(im.transpose(1, 0, 2))
-##viewer3 = ScrollView(im.transpose(2, 0, 1))
-#
-## Make three Matplotlib supblots, and populate them with the viewers objects
-## The aspect ratios of the different axes need to be defined here as well.
-#fig, ax = plt.subplots(1, 3)
-#viewer1.plot(ax[0], cmap='gray', aspect=aspect_ratio[1]/aspect_ratio[2])
-#viewer2.plot(ax[1], cmap='gray', aspect=aspect_ratio[0]/aspect_ratio[2])
-#viewer3.plot(ax[2], cmap='gray', aspect=aspect_ratio[0]/aspect_ratio[1])
+if __name__ == '__main__':
+    DATA_PATH = r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Dataset'
+    ELASTIX_PATH = r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Practical\Software\elastix_windows64\elastix.exe'
+    TRANSFORMIX_PATH = r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Practical\Software\elastix_windows64\transformix.exe'
+    RESULT_PATH = r'D:\Leander\8DM20 Capita Selecta Image Analysis\Run 3'
+    
+    MI = register(DATA_PATH, ELASTIX_PATH, RESULT_PATH, registration='BSpline')
+    np.save('MutualInformation.npy',MI)

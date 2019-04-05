@@ -12,13 +12,13 @@ def Import_Files(path):
     masks = []
     MRI = []
     for patient in folders:
-        files = glob.glob(patient+r'\*')
+        files = glob.glob(patient+r'\*.mhd')
         im = sitk.ReadImage(files[0])
-        m = sitk.ReadImage(files[2])
+        m = sitk.ReadImage(files[1])
         im_arr = sitk.GetArrayFromImage(im)
         m_arr = sitk.GetArrayFromImage(m)
-        masks.append(m_arr)
         MRI.append(im_arr)
+        masks.append(m_arr)
     MRI = np.stack(MRI)
     masks = np.stack(masks)
     return MRI,masks
@@ -30,15 +30,15 @@ def Import_Files_string(path):
     masks = []
     MRI = []
     for patient in folders:
-        files = glob.glob(patient+r'\*')
-        masks.append(files[2])
+        files = glob.glob(patient+r'\*.mhd')
         MRI.append(files[0])
+        masks.append(files[1])
     MRI = np.stack(MRI)
     masks = np.stack(masks)
     return MRI,masks
 
-
-path= r'C:\Users\s081992\Documents\TUE\Year 2\Q3\Capita Selecta\Part 2\TrainingData\TrainingData'
+if __name__ == '__main__':
+    path= r'C:\Users\s081992\Documents\TUE\Year 2\Q3\Capita Selecta\Part 2\TrainingData\TrainingData'
 
 #%% Optional visualisation of Data
 #import random
