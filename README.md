@@ -25,7 +25,7 @@ Members of group 7:
 * Kees van Dorp (0653884, a.c.v.dorp@student.tue.nl)
 * Merel Eussen (0964211, m.j.a.eussen@student.tue.nl)
 * Milan Gillissen (0861128, m.gillissen@student.tue.nl)
-* Teun van den Meerakker (0865482 t.v.d.meerakkker@student.tue.nl)
+* Teun van de Meerakker (0865482 t.v.d.meerakkker@student.tue.nl)
 
 This script package offers the Python scripts necessary to perform Image Registration,
  Mask Deformation and different descision fusing techniques.
