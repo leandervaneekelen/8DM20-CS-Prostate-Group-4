@@ -84,24 +84,34 @@ def CreateFolder(fixed, moving, path):
         os.makedirs(dir_path)
     return dir_path
 
-def register(data_path, elastix_path, results_path,registration = 'BSpline'):
-    """Performs leave 1-out registration of the entire dataset. Takes as input three paths, to:
-        a) data folder; b) elastix.exe path; c) path to results folder
-        OPTIONAL ARGUMENT: specifying what kind of registration via 'registration' parameter
-        Options are: 'Affine', 'BSpline', 'Both' - 'BSpline' is default
-        
-        Writes registered images and logs files to disk, returns nxn MI numpy array."""
-        
-    scans , masks = Import_Files_string(data_path)
+def register(fixed_ims_path, moving_ims_path, elastix_path, results_path,registration = 'BSpline'):
+    """Registers the moving images present in moving_ims_paths to all fixed images in fixed_ims_path. To do so, register()
+    takes as input four paths, to:
+         a) data folder containing fixed images
+         b) data folder containing moving images
+         c) elastix.exe path
+         d) path to results folder
+         e) OPTIONAL ARGUMENT: specifying what kind of registration via 'registration' parameter
+            Options are: 'Affine', 'BSpline', 'Both' - 'BSpline' is default
+    If fixed and moving images paths are identical, this function effectively performs leave-1-out registration
+    for the entire set.
     
-    MI = np.zeros((len(scans),len(scans)))
+    Writes registered images and logs files to disk, returns a (mxn) MI numpy array containing the mutual information
+    between all fixed images (m) and the registered moving images (n)."""
+        
+    fixed_ims = Import_Files_string(fixed_ims_path, files_to_import = 'images')
+    moving_ims = Import_Files_string(moving_ims_path, files_to_import = 'images')
+    
+    # Create MI array to stop MI's between fixed and moving images in
+    MI = np.zeros((len(fixed_ims),len(moving_ims)))
     MI[:] = np.nan
-    for i in range(len(scans)):
-        fixed = scans[i]
-        for j in range(len(scans)):
-            if i !=j: # Do not compare images with themselves
-                moving = scans[j]
-                destination_path = CreateFolder(fixed[-16:-12],moving[-16:-12], results_path)
+    
+    for i in range(len(fixed_ims)):
+        fixed = fixed_ims[i]
+        for j in range(len(moving_ims)):
+            moving = moving_ims[j]
+            if fixed != moving: # Do not compare images with themselves
+                destination_path = CreateFolder(fixed[-16:-12], moving[-16:-12], results_path)
                 #%% First registration option: Affine.
                 if registration == 'Affine':
                     p = r'parameterfiles\Parameters_Affine.txt'
@@ -118,13 +128,16 @@ def register(data_path, elastix_path, results_path,registration = 'BSpline'):
                 
                 #%% Storing Mutual information in an 15x15 array. 
                 MI[i,j] = FindMI(r'{}\IterationInfo.0.R3.txt'.format(destination_path))
+    
+    # Write MI array to disk
+    np.save(results_path + r'\MutualInformation.npy', MI)        
     return MI
 
 if __name__ == '__main__':
-    DATA_PATH = r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Dataset'
+    FIXED_IMAGES_PATH = r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Dataset'
+    MOVING_IMAGES_PATH = r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Dataset'
     ELASTIX_PATH = r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Practical\Software\elastix_windows64\elastix.exe'
     TRANSFORMIX_PATH = r'C:\Users\s159890\Documents\Q3 Jaar 1 (BME)\Capita selecta in image analysis (8DM20)\Registration\Assignment 2\Practical\Software\elastix_windows64\transformix.exe'
-    RESULT_PATH = r'D:\Leander\8DM20 Capita Selecta Image Analysis\Run 3'
+    RESULT_PATH = r'D:\Leander\8DM20 Capita Selecta Image Analysis\Run 4'
     
-    MI = register(DATA_PATH, ELASTIX_PATH, RESULT_PATH, registration='BSpline')
-    np.save('MutualInformation.npy',MI)
+    MI = register(FIXED_IMAGES_PATH, MOVING_IMAGES_PATH, ELASTIX_PATH, RESULT_PATH, registration='BSpline')
